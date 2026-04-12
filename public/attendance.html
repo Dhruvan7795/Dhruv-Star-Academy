@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dhruv Star Academy - Attendance</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img src="/images/logo.png" alt="Logo" class="header-logo">
+        <div>
+          <h1>Dhruv Star Academy</h1>
+          <span class="subtitle">Attendance Management</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="user-info" id="userInfo"></span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Step 1: Select Class & Board -->
+    <div class="card" id="selectionCard">
+      <h2>📋 Select Class Details</h2>
+      <div class="filters">
+        <div class="form-group">
+          <label for="selectClass">Class</label>
+          <select id="selectClass" onchange="onClassChange()">
+            <option value="">-- Select Class --</option>
+            <option value="1-7">Class 1 to 7th</option>
+            <option value="8">Class 8th</option>
+            <option value="9">Class 9th</option>
+            <option value="10">Class 10th</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="boardGroup" style="display:none;">
+          <label for="selectBoard">Board</label>
+          <select id="selectBoard">
+            <option value="">-- Select Board --</option>
+            <option value="State">State</option>
+            <option value="CBSE">CBSE</option>
+            <option value="ICSE">ICSE</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="display:flex; align-items:flex-end;">
+          <button class="btn btn-primary" onclick="loadStudents()" style="width:auto; padding:10px 30px;">
+            Load Students
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Attendance Table -->
+    <div class="card" id="attendanceCard" style="display:none;">
+      <h2>📝 Mark Attendance - <span id="classLabel"></span> <span id="dateLabel"></span></h2>
+
+      <div id="alertBox" class="alert alert-error"></div>
+      <div id="successBox" class="alert alert-success"></div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>Student Name</th>
+              <th>Attendance</th>
+            </tr>
+          </thead>
+          <tbody id="studentTableBody">
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="icon">📭</div>
+        <p>No students found for this class/board.</p>
+        <p style="font-size:0.85rem;">Ask admin to add students first.</p>
+      </div>
+
+      <div class="submit-section" id="submitSection" style="display:none;">
+        <button class="btn btn-success" id="btnSubmit" onclick="submitAttendance()" disabled>
+          ✅ Submit Attendance & Send WhatsApp
+        </button>
+        <p style="margin-top:8px; font-size:0.8rem; color:var(--text-light);">
+          Mark all students before submitting.
+        </p>
+      </div>
+    </div>
+
+    <!-- Step 3: Results -->
+    <div class="card" id="resultsCard" style="display:none;">
+      <h2>📤 Attendance Submitted Successfully!</h2>
+      <div class="results-summary" id="resultsSummary"></div>
+      <div style="text-align:center; margin-top:20px;">
+        <button class="btn btn-primary" onclick="resetPage()" style="width:auto;">Take Another Attendance</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/attendance.js"></script>
+</body>
+</html>

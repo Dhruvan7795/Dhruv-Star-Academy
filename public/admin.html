@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dhruv Star Academy - Admin Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img src="/images/logo.png" alt="Logo" class="header-logo">
+        <div>
+          <h1>Dhruv Star Academy</h1>
+          <span class="subtitle">Admin Dashboard</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="user-info" id="userInfo"></span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('students')">👨‍🎓 Students</button>
+      <button class="tab" onclick="switchTab('teachers')">👩‍🏫 Teachers</button>
+      <button class="tab" onclick="switchTab('attendance')">📊 Attendance History</button>
+    </div>
+
+    <!-- ======================== STUDENTS TAB ======================== -->
+    <div class="tab-content active" id="tab-students">
+      <div class="card">
+        <h2>Add New Student</h2>
+        <div class="add-form">
+          <div class="form-group">
+            <label>Sl.No</label>
+            <input type="number" id="addStudentSlNo" placeholder="1" min="1">
+          </div>
+          <div class="form-group">
+            <label>Student Name</label>
+            <input type="text" id="addStudentName" placeholder="Enter name">
+          </div>
+          <div class="form-group">
+            <label>Contact Number</label>
+            <input type="tel" id="addStudentContact" placeholder="+91XXXXXXXXXX">
+          </div>
+          <div class="form-group">
+            <label>Class</label>
+            <select id="addStudentClass" onchange="onAddClassChange()">
+              <option value="">Select</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+            </select>
+          </div>
+          <div class="form-group" id="addBoardGroup" style="display:none;">
+            <label>Board</label>
+            <select id="addStudentBoard">
+              <option value="">Select</option>
+              <option value="State">State</option>
+              <option value="CBSE">CBSE</option>
+              <option value="ICSE">ICSE</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-success" onclick="addStudent()">+ Add Student</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>All Students</h2>
+        <div class="filters" style="margin-bottom:16px;">
+          <div class="form-group">
+            <label>Filter by Class</label>
+            <select id="filterClass" onchange="onFilterClassChange()">
+              <option value="">All Classes</option>
+              <option value="1">Class 1</option>
+              <option value="2">Class 2</option>
+              <option value="3">Class 3</option>
+              <option value="4">Class 4</option>
+              <option value="5">Class 5</option>
+              <option value="6">Class 6</option>
+              <option value="7">Class 7</option>
+              <option value="8">Class 8</option>
+              <option value="9">Class 9</option>
+              <option value="10">Class 10</option>
+            </select>
+          </div>
+          <div class="form-group" id="filterBoardGroup" style="display:none;">
+            <label>Filter by Board</label>
+            <select id="filterBoard" onchange="loadStudents()">
+              <option value="">All Boards</option>
+              <option value="State">State</option>
+              <option value="CBSE">CBSE</option>
+              <option value="ICSE">ICSE</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="studentAlert" class="alert alert-error"></div>
+        <div id="studentSuccess" class="alert alert-success"></div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Sl.No</th>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Class</th>
+                <th>Board</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="studentsTableBody">
+            </tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="studentsEmpty" style="display:none;">
+          <div class="icon">📭</div>
+          <p>No students found. Add one above!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== TEACHERS TAB ======================== -->
+    <div class="tab-content" id="tab-teachers">
+      <div class="card">
+        <h2>Add New Teacher</h2>
+        <div class="add-form">
+          <div class="form-group">
+            <label>Teacher Name</label>
+            <input type="text" id="addTeacherName" placeholder="Enter name">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="addTeacherPassword" placeholder="Min 4 characters">
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-success" onclick="addTeacher()">+ Add Teacher</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>All Teachers</h2>
+        <div id="teacherAlert" class="alert alert-error"></div>
+        <div id="teacherSuccess" class="alert alert-success"></div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Added On</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="teachersTableBody">
+            </tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="teachersEmpty" style="display:none;">
+          <div class="icon">📭</div>
+          <p>No teachers found. Add one above!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================== ATTENDANCE HISTORY TAB ======================== -->
+    <div class="tab-content" id="tab-attendance">
+      <div class="card">
+        <h2>Attendance History</h2>
+        <div class="filters" style="margin-bottom:16px;">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="historyDate" onchange="loadAttendanceHistory()">
+          </div>
+          <div class="form-group">
+            <label>Class</label>
+            <select id="historyClass" onchange="loadAttendanceHistory()">
+              <option value="">All Classes</option>
+              <option value="1">1</option><option value="2">2</option>
+              <option value="3">3</option><option value="4">4</option>
+              <option value="5">5</option><option value="6">6</option>
+              <option value="7">7</option><option value="8">8</option>
+              <option value="9">9</option><option value="10">10</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Sl.No</th>
+                <th>Student</th>
+                <th>Class</th>
+                <th>Board</th>
+                <th>Status</th>
+                <th>Teacher</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+            </tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="historyEmpty" style="display:none;">
+          <div class="icon">📋</div>
+          <p>No attendance records found.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Student Modal -->
+  <div class="modal-overlay" id="editStudentModal">
+    <div class="modal">
+      <h3>Edit Student</h3>
+      <div class="form-group">
+        <label>Sl.No</label>
+        <input type="number" id="editStudentSlNo">
+      </div>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="editStudentName">
+      </div>
+      <div class="form-group">
+        <label>Contact Number</label>
+        <input type="tel" id="editStudentContact">
+      </div>
+      <div class="form-group">
+        <label>Class</label>
+        <select id="editStudentClass" onchange="onEditClassChange()">
+          <option value="1">1</option><option value="2">2</option>
+          <option value="3">3</option><option value="4">4</option>
+          <option value="5">5</option><option value="6">6</option>
+          <option value="7">7</option><option value="8">8</option>
+          <option value="9">9</option><option value="10">10</option>
+        </select>
+      </div>
+      <div class="form-group" id="editBoardGroup">
+        <label>Board</label>
+        <select id="editStudentBoard">
+          <option value="N/A">N/A</option>
+          <option value="State">State</option>
+          <option value="CBSE">CBSE</option>
+          <option value="ICSE">ICSE</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('editStudentModal')">Cancel</button>
+        <button class="btn btn-primary" style="width:auto;" onclick="saveStudent()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Teacher Modal -->
+  <div class="modal-overlay" id="editTeacherModal">
+    <div class="modal">
+      <h3>Edit Teacher</h3>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="editTeacherName">
+      </div>
+      <div class="form-group">
+        <label>New Password (leave empty to keep current)</label>
+        <input type="password" id="editTeacherPassword" placeholder="Leave empty to keep unchanged">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('editTeacherModal')">Cancel</button>
+        <button class="btn btn-primary" style="width:auto;" onclick="saveTeacher()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

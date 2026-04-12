@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dhruv Star Academy - Login</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="logo">
+        <img src="/images/logo.png" alt="Dhruv Star Academy" class="logo-img">
+        <p>Attendance Management System</p>
+      </div>
+
+      <!-- Teacher Login Form -->
+      <div id="teacherLoginForm">
+        <h3 style="text-align:center; margin-bottom:20px; color:#475569;">Teacher Login</h3>
+        <div id="alertBox" class="alert alert-error"></div>
+
+        <div class="form-group">
+          <label for="teacherName">Teacher Name</label>
+          <input type="text" id="teacherName" placeholder="Enter your name" autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="teacherPassword">Password</label>
+          <input type="password" id="teacherPassword" placeholder="Enter password" autocomplete="current-password">
+        </div>
+
+        <button class="btn btn-primary" id="btnTeacherLogin" onclick="teacherLogin()">Login</button>
+
+        <div class="admin-link">
+          <a href="#" onclick="showAdminLogin(event)">Admin Login →</a>
+        </div>
+      </div>
+
+      <!-- Admin Login Form (hidden by default) -->
+      <div id="adminLoginForm" style="display:none;">
+        <h3 style="text-align:center; margin-bottom:20px; color:#475569;">Admin Login</h3>
+        <div id="adminAlertBox" class="alert alert-error"></div>
+
+        <div class="form-group">
+          <label for="adminUsername">Username</label>
+          <input type="text" id="adminUsername" placeholder="Enter admin username" autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="adminPassword">Password</label>
+          <input type="password" id="adminPassword" placeholder="Enter admin password" autocomplete="current-password">
+        </div>
+
+        <button class="btn btn-primary" id="btnAdminLogin" onclick="adminLogin()">Admin Login</button>
+
+        <div class="admin-link">
+          <a href="#" onclick="showTeacherLogin(event)">← Back to Teacher Login</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/login.js"></script>
+</body>
+</html>
