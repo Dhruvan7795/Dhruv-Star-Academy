@@ -3,28 +3,54 @@ const router = express.Router();
 const { getDb } = require('../database');
 const { authenticateToken, requireTeacher } = require('../middleware/auth');
 
-// Send WhatsApp message via Twilio
-async function sendWhatsAppMessage(to, message) {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+// Send SMS via Android SMS Gateway (capcom6)
+async function sendSMS(to, message) {
+  const apiUrl = process.env.SMS_GATEWAY_URL;
+  const username = process.env.SMS_GATEWAY_USERNAME;
+  const password = process.env.SMS_GATEWAY_PASSWORD;
 
-  if (!accountSid || accountSid === 'your_twilio_account_sid') {
-    console.log(`[WhatsApp DEMO] To: ${to} | Message: ${message}`);
+  if (!apiUrl || !username || username === 'your_username') {
+    console.log(`[SMS DEMO] To: ${to} | Message: ${message}`);
     return { success: true, demo: true };
   }
 
+  // Ensure number is in proper format (with country code)
+  let phoneNumber = to.replace(/\s/g, '');
+  if (!phoneNumber.startsWith('+')) {
+    phoneNumber = '+91' + phoneNumber.replace(/^0/, '');
+  }
+
   try {
-    const twilio = require('twilio')(accountSid, authToken);
-    const result = await twilio.messages.create({
-      body: message,
-      from: fromNumber,
-      to: `whatsapp:${to}`
+    const credentials = Buffer.from(`${username}:${password}`).toString('base64');
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${credentials}`
+      },
+      body: JSON.stringify({
+        message: message,
+        phoneNumbers: [phoneNumber]
+      })
     });
-    console.log(`[WhatsApp SENT] To: ${to} | SID: ${result.sid}`);
-    return { success: true, sid: result.sid };
+
+    let data;
+    const text = await response.text();
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw: text };
+    }
+
+    if (response.ok) {
+      console.log(`[SMS SENT] To: ${phoneNumber} | Status: OK`);
+      return { success: true };
+    } else {
+      console.error(`[SMS ERROR] To: ${phoneNumber} | Error: ${JSON.stringify(data)}`);
+      return { success: false, error: data.message || 'Failed to send' };
+    }
   } catch (err) {
-    console.error(`[WhatsApp ERROR] To: ${to} | Error: ${err.message}`);
+    console.error(`[SMS ERROR] To: ${phoneNumber} | Error: ${err.message}`);
     return { success: false, error: err.message };
   }
 }
@@ -78,8 +104,8 @@ router.post('/', authenticateToken, requireTeacher, async (req, res) => {
     return res.status(500).json({ error: 'Failed to save attendance.' });
   }
 
-  // Send WhatsApp messages to parents
-  const whatsappResults = [];
+  // Send SMS messages to parents
+  const smsResults = [];
 
   for (const record of attendance) {
     const student = db.prepare('SELECT name, contact_number FROM students WHERE id = ?').get(record.student_id);
@@ -87,18 +113,18 @@ router.post('/', authenticateToken, requireTeacher, async (req, res) => {
 
     let message;
     if (record.status === 'Present') {
-      message = `Dear Parent, your child *${student.name}* is *Present* for tuition today at ${academyName}. Thank you! 📚`;
+      message = `Dear Parent, your child ${student.name} is PRESENT for tuition today at ${academyName}. Thank you!`;
     } else if (record.status === 'Late') {
-      message = `Dear Parent, your child *${student.name}* arrived *Late* for tuition today at ${academyName}. Thank you! 📚`;
+      message = `Dear Parent, your child ${student.name} arrived LATE for tuition today at ${academyName}. Thank you!`;
     } else {
-      message = `Dear Parent, your child *${student.name}* is *Absent* from tuition today at ${academyName}. Please ensure regular attendance. Thank you! 📚`;
+      message = `Dear Parent, your child ${student.name} is ABSENT from tuition today at ${academyName}. Please ensure regular attendance. Thank you!`;
     }
 
-    const result = await sendWhatsAppMessage(student.contact_number, message);
-    whatsappResults.push({
+    const result = await sendSMS(student.contact_number, message);
+    smsResults.push({
       student: student.name,
       status: record.status,
-      whatsapp: result.success ? 'sent' : 'failed',
+      sms: result.success ? 'sent' : 'failed',
       demo: result.demo || false
     });
   }
@@ -106,7 +132,7 @@ router.post('/', authenticateToken, requireTeacher, async (req, res) => {
   res.json({
     message: 'Attendance submitted successfully!',
     date: today,
-    results: whatsappResults
+    results: smsResults
   });
 });
 

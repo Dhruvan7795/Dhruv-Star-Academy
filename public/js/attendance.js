@@ -149,7 +149,7 @@ async function submitAttendance() {
     if (!res.ok) {
       showAlert(data.error || 'Failed to submit attendance.');
       btn.disabled = false;
-      btn.textContent = '✅ Submit Attendance & Send WhatsApp';
+      btn.textContent = '✅ Submit Attendance & Send SMS';
       return;
     }
 
@@ -165,7 +165,7 @@ async function submitAttendance() {
         <span>${escapeHtml(r.student)}</span>
         <div>
           <span class="badge ${badgeClass}">${r.status}</span>
-          <span class="badge badge-sent">${r.demo ? '📱 Demo' : '📱 Sent'}</span>
+          <span class="badge badge-sent">${r.demo ? '📱 Demo' : '📱 SMS Sent'}</span>
         </div>
       `;
       summary.appendChild(div);
@@ -177,7 +177,7 @@ async function submitAttendance() {
   } catch (err) {
     showAlert('Network error. Please try again.');
     btn.disabled = false;
-    btn.textContent = '✅ Submit Attendance & Send WhatsApp';
+    btn.textContent = '✅ Submit Attendance & Send SMS';
   }
 }
 
