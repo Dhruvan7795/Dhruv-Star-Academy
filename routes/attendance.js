@@ -73,33 +73,22 @@ router.post('/', authenticateToken, requireTeacher, async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
 
   // Check if attendance already submitted for this class/board/teacher/date
-  const existing = db.prepare(
-    'SELECT id FROM attendance WHERE teacher_id = ? AND class = ? AND board = ? AND date = ? LIMIT 1'
-  ).get(teacherId, studentClass, board || 'N/A', today);
+  const existingResult = await db.execute({
+    sql: 'SELECT id FROM attendance WHERE teacher_id = ? AND class = ? AND board = ? AND date = ? LIMIT 1',
+    args: [teacherId, studentClass, board || 'N/A', today]
+  });
 
-  if (existing) {
+  if (existingResult.rows.length > 0) {
     return res.status(409).json({ error: 'Attendance already submitted for this class today.' });
   }
 
-  const insertStmt = db.prepare(
-    'INSERT INTO attendance (student_id, teacher_id, class, board, status, date) VALUES (?, ?, ?, ?, ?, ?)'
-  );
-
-  const insertMany = db.transaction((records) => {
-    for (const record of records) {
-      insertStmt.run(
-        record.student_id,
-        teacherId,
-        studentClass,
-        board || 'N/A',
-        record.status,
-        today
-      );
-    }
-  });
-
   try {
-    insertMany(attendance);
+    for (const record of attendance) {
+      await db.execute({
+        sql: 'INSERT INTO attendance (student_id, teacher_id, class, board, status, date) VALUES (?, ?, ?, ?, ?, ?)',
+        args: [record.student_id, teacherId, studentClass, board || 'N/A', record.status, today]
+      });
+    }
   } catch (err) {
     return res.status(500).json({ error: 'Failed to save attendance.' });
   }
@@ -108,7 +97,8 @@ router.post('/', authenticateToken, requireTeacher, async (req, res) => {
   const smsResults = [];
 
   for (const record of attendance) {
-    const student = db.prepare('SELECT name, contact_number FROM students WHERE id = ?').get(record.student_id);
+    const studentResult = await db.execute({ sql: 'SELECT name, contact_number FROM students WHERE id = ?', args: [record.student_id] });
+    const student = studentResult.rows[0];
     if (!student) continue;
 
     let message;
@@ -137,7 +127,7 @@ router.post('/', authenticateToken, requireTeacher, async (req, res) => {
 });
 
 // Get attendance history (for admin)
-router.get('/history', authenticateToken, (req, res) => {
+router.get('/history', authenticateToken, async (req, res) => {
   const { date, class: studentClass, board } = req.query;
   const db = getDb();
 
@@ -169,8 +159,8 @@ router.get('/history', authenticateToken, (req, res) => {
 
   query += ' ORDER BY a.date DESC, s.sl_no ASC';
 
-  const records = db.prepare(query).all(...params);
-  res.json(records);
+  const result = await db.execute({ sql: query, args: params });
+  res.json(result.rows);
 });
 
 module.exports = router;

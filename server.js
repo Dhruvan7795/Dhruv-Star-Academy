@@ -6,7 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-const { getDb } = require('./database');
+const { initDatabase } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,9 +32,6 @@ const loginLimiter = rateLimit({
 });
 app.use('/api/auth/', loginLimiter);
 
-// Initialize database
-getDb();
-
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -49,6 +46,12 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 app.get('/attendance', (req, res) => res.sendFile(path.join(__dirname, 'public', 'attendance.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
-app.listen(PORT, () => {
-  console.log(`✅ Dhruv Star Academy server running at http://localhost:${PORT}`);
+// Initialize database then start server
+initDatabase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`✅ Dhruv Star Academy server running at http://localhost:${PORT}`);
+  });
+}).catch(err => {
+  console.error('Failed to initialize database:', err);
+  process.exit(1);
 });

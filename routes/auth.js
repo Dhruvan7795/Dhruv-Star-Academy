@@ -6,7 +6,7 @@ const { getDb } = require('../database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 // Teacher Login
-router.post('/teacher/login', (req, res) => {
+router.post('/teacher/login', async (req, res) => {
   const { name, password } = req.body;
 
   if (!name || !password) {
@@ -14,7 +14,8 @@ router.post('/teacher/login', (req, res) => {
   }
 
   const db = getDb();
-  const teacher = db.prepare('SELECT * FROM teachers WHERE name = ?').get(name);
+  const result = await db.execute({ sql: 'SELECT * FROM teachers WHERE name = ?', args: [name] });
+  const teacher = result.rows[0];
 
   if (!teacher) {
     return res.status(401).json({ error: 'Invalid name or password.' });
@@ -35,7 +36,7 @@ router.post('/teacher/login', (req, res) => {
 });
 
 // Admin Login
-router.post('/admin/login', (req, res) => {
+router.post('/admin/login', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -43,7 +44,8 @@ router.post('/admin/login', (req, res) => {
   }
 
   const db = getDb();
-  const admin = db.prepare('SELECT * FROM admin WHERE username = ?').get(username);
+  const result = await db.execute({ sql: 'SELECT * FROM admin WHERE username = ?', args: [username] });
+  const admin = result.rows[0];
 
   if (!admin) {
     return res.status(401).json({ error: 'Invalid username or password.' });
@@ -64,7 +66,7 @@ router.post('/admin/login', (req, res) => {
 });
 
 // Change admin password
-router.put('/admin/password', authenticateToken, requireAdmin, (req, res) => {
+router.put('/admin/password', authenticateToken, requireAdmin, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
@@ -76,7 +78,8 @@ router.put('/admin/password', authenticateToken, requireAdmin, (req, res) => {
   }
 
   const db = getDb();
-  const admin = db.prepare('SELECT * FROM admin WHERE id = ?').get(req.user.id);
+  const result = await db.execute({ sql: 'SELECT * FROM admin WHERE id = ?', args: [req.user.id] });
+  const admin = result.rows[0];
 
   const validPassword = bcrypt.compareSync(currentPassword, admin.password);
   if (!validPassword) {
@@ -84,7 +87,7 @@ router.put('/admin/password', authenticateToken, requireAdmin, (req, res) => {
   }
 
   const hashedPassword = bcrypt.hashSync(newPassword, 10);
-  db.prepare('UPDATE admin SET password = ? WHERE id = ?').run(hashedPassword, req.user.id);
+  await db.execute({ sql: 'UPDATE admin SET password = ? WHERE id = ?', args: [hashedPassword, req.user.id] });
 
   res.json({ message: 'Password updated successfully.' });
 });
