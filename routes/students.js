@@ -4,7 +4,7 @@ const { getDb } = require('../database');
 const { authenticateToken, requireAdmin, requireTeacher } = require('../middleware/auth');
 
 // Get students (filtered by class and board)
-router.get('/', authenticateToken, requireTeacher, (req, res) => {
+router.get('/', authenticateToken, requireTeacher, async (req, res) => {
   const { class: studentClass, board } = req.query;
   const db = getDb();
 
@@ -31,43 +31,40 @@ router.get('/', authenticateToken, requireTeacher, (req, res) => {
 
   query += ' ORDER BY sl_no ASC';
 
-  const students = db.prepare(query).all(...params);
-  res.json(students);
+  const result = await db.execute({ sql: query, args: params });
+  res.json(result.rows);
 });
 
 // Get single student
-router.get('/:id', authenticateToken, requireTeacher, (req, res) => {
+router.get('/:id', authenticateToken, requireTeacher, async (req, res) => {
   const db = getDb();
-  const student = db.prepare('SELECT * FROM students WHERE id = ?').get(req.params.id);
+  const result = await db.execute({ sql: 'SELECT * FROM students WHERE id = ?', args: [req.params.id] });
 
-  if (!student) {
+  if (result.rows.length === 0) {
     return res.status(404).json({ error: 'Student not found.' });
   }
 
-  res.json(student);
+  res.json(result.rows[0]);
 });
 
 // Add student (admin only)
-router.post('/', authenticateToken, requireAdmin, (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   const { sl_no, name, contact_number, class: studentClass, board } = req.body;
 
   if (!sl_no || !name || !contact_number || !studentClass) {
     return res.status(400).json({ error: 'Sl.No, name, contact number, and class are required.' });
   }
 
-  // Validate contact number (Indian format)
   const cleanNumber = contact_number.replace(/\s/g, '');
   if (!/^\+?[0-9]{10,13}$/.test(cleanNumber)) {
     return res.status(400).json({ error: 'Invalid contact number format.' });
   }
 
-  // Validate class
   const validClasses = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
   if (!validClasses.includes(String(studentClass))) {
     return res.status(400).json({ error: 'Invalid class. Must be 1-10.' });
   }
 
-  // Board is N/A for classes 1-7
   let finalBoard = 'N/A';
   if (parseInt(studentClass) >= 8) {
     const validBoards = ['State', 'CBSE', 'ICSE'];
@@ -80,12 +77,13 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
   const db = getDb();
 
   try {
-    const result = db.prepare(
-      'INSERT INTO students (sl_no, name, contact_number, class, board) VALUES (?, ?, ?, ?, ?)'
-    ).run(sl_no, name.trim(), cleanNumber, String(studentClass), finalBoard);
+    const result = await db.execute({
+      sql: 'INSERT INTO students (sl_no, name, contact_number, class, board) VALUES (?, ?, ?, ?, ?)',
+      args: [sl_no, name.trim(), cleanNumber, String(studentClass), finalBoard]
+    });
 
     res.status(201).json({
-      id: result.lastInsertRowid,
+      id: Number(result.lastInsertRowid),
       message: 'Student added successfully.'
     });
   } catch (err) {
@@ -94,7 +92,7 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
 });
 
 // Update student (admin only)
-router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   const { sl_no, name, contact_number, class: studentClass, board } = req.body;
 
   if (!sl_no || !name || !contact_number || !studentClass) {
@@ -116,27 +114,28 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
   }
 
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM students WHERE id = ?').get(req.params.id);
-  if (!existing) {
+  const existing = await db.execute({ sql: 'SELECT id FROM students WHERE id = ?', args: [req.params.id] });
+  if (existing.rows.length === 0) {
     return res.status(404).json({ error: 'Student not found.' });
   }
 
-  db.prepare(
-    'UPDATE students SET sl_no = ?, name = ?, contact_number = ?, class = ?, board = ? WHERE id = ?'
-  ).run(sl_no, name.trim(), cleanNumber, String(studentClass), finalBoard, req.params.id);
+  await db.execute({
+    sql: 'UPDATE students SET sl_no = ?, name = ?, contact_number = ?, class = ?, board = ? WHERE id = ?',
+    args: [sl_no, name.trim(), cleanNumber, String(studentClass), finalBoard, req.params.id]
+  });
 
   res.json({ message: 'Student updated successfully.' });
 });
 
 // Delete student (admin only)
-router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM students WHERE id = ?').get(req.params.id);
-  if (!existing) {
+  const existing = await db.execute({ sql: 'SELECT id FROM students WHERE id = ?', args: [req.params.id] });
+  if (existing.rows.length === 0) {
     return res.status(404).json({ error: 'Student not found.' });
   }
 
-  db.prepare('DELETE FROM students WHERE id = ?').run(req.params.id);
+  await db.execute({ sql: 'DELETE FROM students WHERE id = ?', args: [req.params.id] });
   res.json({ message: 'Student deleted successfully.' });
 });
 

@@ -5,21 +5,21 @@ const { getDb } = require('../database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 // Get all teachers (admin only)
-router.get('/', authenticateToken, requireAdmin, (req, res) => {
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   const db = getDb();
-  const teachers = db.prepare('SELECT id, name, created_at FROM teachers ORDER BY name').all();
-  res.json(teachers);
+  const result = await db.execute('SELECT id, name, created_at FROM teachers ORDER BY name');
+  res.json(result.rows);
 });
 
 // Get all teacher names (for dropdown - any authenticated user)
-router.get('/names', authenticateToken, (req, res) => {
+router.get('/names', authenticateToken, async (req, res) => {
   const db = getDb();
-  const teachers = db.prepare('SELECT id, name FROM teachers ORDER BY name').all();
-  res.json(teachers);
+  const result = await db.execute('SELECT id, name FROM teachers ORDER BY name');
+  res.json(result.rows);
 });
 
 // Add teacher (admin only)
-router.post('/', authenticateToken, requireAdmin, (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   const { name, password } = req.body;
 
   if (!name || !password) {
@@ -32,21 +32,21 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
 
   const db = getDb();
 
-  // Check if teacher name already exists
-  const existing = db.prepare('SELECT id FROM teachers WHERE name = ?').get(name.trim());
-  if (existing) {
+  const existing = await db.execute({ sql: 'SELECT id FROM teachers WHERE name = ?', args: [name.trim()] });
+  if (existing.rows.length > 0) {
     return res.status(409).json({ error: 'A teacher with this name already exists.' });
   }
 
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   try {
-    const result = db.prepare(
-      'INSERT INTO teachers (name, password) VALUES (?, ?)'
-    ).run(name.trim(), hashedPassword);
+    const result = await db.execute({
+      sql: 'INSERT INTO teachers (name, password) VALUES (?, ?)',
+      args: [name.trim(), hashedPassword]
+    });
 
     res.status(201).json({
-      id: result.lastInsertRowid,
+      id: Number(result.lastInsertRowid),
       message: 'Teacher added successfully.'
     });
   } catch (err) {
@@ -55,7 +55,7 @@ router.post('/', authenticateToken, requireAdmin, (req, res) => {
 });
 
 // Update teacher (admin only)
-router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   const { name, password } = req.body;
 
   if (!name) {
@@ -63,14 +63,13 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
   }
 
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM teachers WHERE id = ?').get(req.params.id);
-  if (!existing) {
+  const existing = await db.execute({ sql: 'SELECT id FROM teachers WHERE id = ?', args: [req.params.id] });
+  if (existing.rows.length === 0) {
     return res.status(404).json({ error: 'Teacher not found.' });
   }
 
-  // Check if new name conflicts with another teacher
-  const nameConflict = db.prepare('SELECT id FROM teachers WHERE name = ? AND id != ?').get(name.trim(), req.params.id);
-  if (nameConflict) {
+  const nameConflict = await db.execute({ sql: 'SELECT id FROM teachers WHERE name = ? AND id != ?', args: [name.trim(), req.params.id] });
+  if (nameConflict.rows.length > 0) {
     return res.status(409).json({ error: 'A teacher with this name already exists.' });
   }
 
@@ -79,23 +78,23 @@ router.put('/:id', authenticateToken, requireAdmin, (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 4 characters.' });
     }
     const hashedPassword = bcrypt.hashSync(password, 10);
-    db.prepare('UPDATE teachers SET name = ?, password = ? WHERE id = ?').run(name.trim(), hashedPassword, req.params.id);
+    await db.execute({ sql: 'UPDATE teachers SET name = ?, password = ? WHERE id = ?', args: [name.trim(), hashedPassword, req.params.id] });
   } else {
-    db.prepare('UPDATE teachers SET name = ? WHERE id = ?').run(name.trim(), req.params.id);
+    await db.execute({ sql: 'UPDATE teachers SET name = ? WHERE id = ?', args: [name.trim(), req.params.id] });
   }
 
   res.json({ message: 'Teacher updated successfully.' });
 });
 
 // Delete teacher (admin only)
-router.delete('/:id', authenticateToken, requireAdmin, (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM teachers WHERE id = ?').get(req.params.id);
-  if (!existing) {
+  const existing = await db.execute({ sql: 'SELECT id FROM teachers WHERE id = ?', args: [req.params.id] });
+  if (existing.rows.length === 0) {
     return res.status(404).json({ error: 'Teacher not found.' });
   }
 
-  db.prepare('DELETE FROM teachers WHERE id = ?').run(req.params.id);
+  await db.execute({ sql: 'DELETE FROM teachers WHERE id = ?', args: [req.params.id] });
   res.json({ message: 'Teacher deleted successfully.' });
 });
 
